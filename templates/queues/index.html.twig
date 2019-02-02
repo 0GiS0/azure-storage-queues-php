@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello QueuesController!{% endblock %}
+
+{% block body %}
+<div class="row">
+<div class="col-lg-12 jumbotron">
+    <h1>Azure Queue storage</h1>
+    <p class="lead">It's a service for storing large numbers of messages that can be accessed from anywhere in the world via authenticated calls using HTTP or HTTPS. A single queue message can be up to 64 KB in size, and a queue can contain millions of messages, up to the total capacity limit of a storage account.</p>
+</div>
+</div>
+<div class="row">
+    <div class="col">
+    <form action="/send/message" method="post" class="form-inline">
+            <div class="input-group mb-3">
+                <input type="text" name="message" class="form-control" placeholder="Send a new message" aria-label="New message" aria-describedby="button-addon2">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Send</button>            
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="row">
+
+     {% for message in messages %}
+        <div class="col-sm-6">
+            <div class="card p-3 text-right" style="margin-bottom: 5px">
+                <blockquote class="blockquote mb-0">
+                    <p>{{message.getMessageText()}}</p>
+                    <footer class="blockquote-footer">
+                        <small class="text-muted">
+                            Last enqueued {{date().diff(message.getInsertionDate()).i}} minutes ago.<br/><cite title="Source Title">Dequeued {{message.getDequeueCount()}} times.</cite>
+                        </small>
+                    </footer>
+                </blockquote>
+            </div>
+        </div>            
+      {% endfor %}
+</div>
+{% endblock %}
+{% block javascripts %}
+<script>
+    toastr.options = {
+        "closeButton": true,
+        "debug": false,
+        "newestOnTop": false,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "preventDuplicates": false,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "5000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+    };
+    setInterval(()=>{
+        fetch('http://127.0.0.1:8000/message')
+            .then(res=>res.json())
+            .then((data)=>{
+                console.log(data);
+                toastr.options.onCloseClick = () => {
+                     fetch(`http://127.0.0.1:8000/message/delete/${data.id}/${data.popReceipt}`)
+                     .then(()=>{
+                         console.log('message deleted');
+                     });
+                }
+                toastr.info(data.text,'Inbox');
+            });
+    },10000);
+</script>
+{% endblock %}
